@@ -67,15 +67,9 @@ export class JsonApiModel {
       for (let metadata of hasMany) {
         let relationship: any = data.relationships ? data.relationships[metadata.relationship] : null;
         if (relationship && relationship.data && relationship.data.length > 0) {
-          let typeName: string = relationship.data[0].type;
-          let modelType: ModelType<this> = Reflect.getMetadata('JsonApiDatastoreConfig', this._datastore.constructor).models[typeName];
-          if (modelType) {
-            let relationshipModel: JsonApiModel[] = this.getHasManyRelationship(modelType, relationship.data, included, typeName, level);
-            if (relationshipModel.length > 0) {
-              this[metadata.propertyName] = relationshipModel;
-            }
-          } else {
-            throw {message: 'parseHasMany - Model type for relationship ' + typeName + ' not found.'};
+          let relationshipModel: JsonApiModel[] = this.getHasManyRelationship(relationship.data, included, level);
+          if (relationshipModel.length > 0) {
+            this[metadata.propertyName] = relationshipModel;
           }
         }
       }
@@ -106,12 +100,18 @@ export class JsonApiModel {
     }
   }
 
-  private getHasManyRelationship<T extends this>(modelType: ModelType<T>, data: any, included: any, typeName: string, level: number): T[] {
-    let relationshipList: T[] = [];
-    data.forEach((item: any) => {
+  private getHasManyRelationship(data: any, included: any, level: number): any[] {
+    let relationshipList: any[] = [];
+    data.forEach((item: any, index: number) => {
+      let typeName: string = data[index].type;
+      let modelType: ModelType<this> = Reflect.getMetadata('JsonApiDatastoreConfig', this._datastore.constructor).models[typeName];
+
+      if (!modelType) {
+        throw {message: 'parseHasMany - Model type for relationship ' + typeName + ' not found.'};
+      }
       let relationshipData: any = _.find(included, {id: item.id, type: typeName});
       if (relationshipData) {
-        let newObject: T = this.createOrPeek(modelType, relationshipData);
+        let newObject: any = this.createOrPeek(modelType, relationshipData);
         if (level <= 1) {
           newObject.syncRelationships(relationshipData, included, level + 1);
         }
