@@ -160,6 +160,7 @@ export class JsonApiDatastore {
       let body: any = error.json();
       if (body.errors && body.errors instanceof Array) {
         let errors: ErrorResponse = new ErrorResponse(body.errors);
+        console.error('testing');
         console.error(errMsg, errors);
         return Observable.throw(errors);
       }
